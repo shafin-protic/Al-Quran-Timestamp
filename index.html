@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Audio Fast Segmenter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090d11;
+            --surface: #10161d;
+            --surface-elevated: #16202a;
+            --border: #202b37;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --accent-gold: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            padding: 24px 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .header h1 {
+            font-size: 1.15rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .row {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        label {
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        input[type="number"], input[type="text"] {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+        input[type="number"]:focus, input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: var(--radius);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+        }
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            color: #000;
+        }
+
+        .btn-gold {
+            background: var(--accent-gold);
+            color: #000;
+            border-color: var(--accent-gold);
+        }
+
+        .time-display {
+            font-variant-numeric: tabular-nums;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-align: center;
+            margin: 10px 0;
+            letter-spacing: 1px;
+        }
+
+        .waveform-mock {
+            width: 100%;
+            height: 48px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 0%;
+            background: rgba(16, 185, 129, 0.28);
+            border-right: 2px solid var(--primary);
+        }
+
+        /* Current Live Segment Dock */
+        .live-status-box {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 12px 0;
+        }
+
+        .live-tag {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Shortcut Panel */
+        .shortcuts-banner {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: var(--radius);
+            padding: 10px;
+            font-size: 0.78rem;
+            color: var(--text-main);
+            margin-top: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .shortcuts-banner kbd {
+            background: var(--surface);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            color: var(--accent-gold);
+            font-weight: 700;
+        }
+
+        /* Segments Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+            margin-top: 14px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+        }
+
+        tr:hover td {
+            background: var(--surface-elevated);
+        }
+
+        .btn-tiny-del {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-tiny-del:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        /* Modal Popup for Multi-verse End */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            width: 340px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="header">
+            <h1>⏱️ Fast Quran Audio Segmenter</h1>
+            <div>
+                <label for="audioFileInput" class="btn btn-primary">📁 Choose Surah Audio</label>
+                <input type="file" id="audioFileInput" accept="audio/*">
+            </div>
+        </div>
+
+        <div class="row">
+            <div>
+                <label>Surah Number</label>
+                <input type="number" id="surahId" value="1" min="1" max="114" style="width: 85px;">
+            </div>
+            <div>
+                <label>Starting Ayah</label>
+                <input type="number" id="currentStartingAyah" value="1" min="1" style="width: 85px;">
+            </div>
+            <div style="flex:1;">
+                <label>Loaded Audio</label>
+                <div id="loadedFileName" style="font-size: 0.84rem; color: var(--text-muted); padding: 7px 0;">No file chosen</div>
+            </div>
+        </div>
+
+        <!-- Scrubber Bar -->
+        <div class="waveform-mock" id="waveform">
+            <div class="progress-indicator" id="progressIndicator"></div>
+        </div>
+
+        <div class="time-display" id="currentTimeLabel">00:00.00</div>
+
+        <!-- Current Working Segment Banner -->
+        <div class="live-status-box">
+            <div>
+                <div class="live-tag" id="liveSegmentAyah">Current Segment: Ayah 1</div>
+                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px;">
+                    Started at: <span id="liveSegmentStartTime" style="color:var(--accent-gold); font-weight:700;">0.00s</span>
+                </div>
+            </div>
+            <button class="btn btn-gold" id="btnManualCommit" title="Shortcut: +">+ Mark End of Segment</button>
+        </div>
+
+        <!-- Workflow Keyboard Map -->
+        <div class="shortcuts-banner">
+            <div><kbd>Space</kbd> Play / Pause</div>
+            <div><kbd>←</kbd> -5 sec</div>
+            <div><kbd>→</kbd> +5 sec</div>
+            <div><kbd>+</kbd> Mark Segment End</div>
+        </div>
+    </div>
+
+    <!-- Mapped Segments List -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h2>Segments (<span id="segmentCount">0</span>)</h2>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-gold" id="btnExportJSON">⬇ Export JSON</button>
+                <button class="btn btn-primary" id="btnExportCSV">⬇ Export CSV</button>
+            </div>
+        </div>
+
+        <table id="segmentsTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Ayah Range</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Duration</th>
+                    <th style="width: 80px; text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px 0;">No segments marked yet. Start audio and press "+" to slice.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<audio id="audio"></audio>
+
+<!-- Prompt Dialog on Pressing + (Allows modifying ending Ayah if multi-verse) -->
+<div class="modal-overlay" id="endAyahModal">
+    <div class="modal-card">
+        <h3 style="font-size:1rem; margin-bottom:10px; color:var(--primary);">Confirm Segment Ayahs</h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">
+            Segment starting at <strong id="modalStartAyah">Ayah 1</strong>:
+        </p>
+        <div style="margin-bottom:16px;">
+            <label>Ending Ayah</label>
+            <input type="number" id="modalEndAyahInput" value="1" min="1" style="width:100%;">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn" id="modalCancelBtn">Cancel</button>
+            <button class="btn btn-primary" id="modalConfirmBtn">Save (Enter)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const audio = document.getElementById('audio');
+    const audioFileInput = document.getElementById('audioFileInput');
+    const loadedFileName = document.getElementById('loadedFileName');
+    const surahIdInput = document.getElementById('surahId');
+    const currentStartingAyahInput = document.getElementById('currentStartingAyah');
+
+    const currentTimeLabel = document.getElementById('currentTimeLabel');
+    const waveform = document.getElementById('waveform');
+    const progressIndicator = document.getElementById('progressIndicator');
+
+    const liveSegmentAyah = document.getElementById('liveSegmentAyah');
+    const liveSegmentStartTime = document.getElementById('liveSegmentStartTime');
+    const btnManualCommit = document.getElementById('btnManualCommit');
+
+    const segmentsTable = document.querySelector('#segmentsTable tbody');
+    const segmentCount = document.getElementById('segmentCount');
+    const btnExportJSON = document.getElementById('btnExportJSON');
+    const btnExportCSV = document.getElementById('btnExportCSV');
+
+    // Modal elements
+    const endAyahModal = document.getElementById('endAyahModal');
+    const modalStartAyah = document.getElementById('modalStartAyah');
+    const modalEndAyahInput = document.getElementById('modalEndAyahInput');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+    let segments = [];
+    let currentSegmentStartTime = 0.00;
+    let pendingEndTime = 0.00;
+
+    function formatTimePrecise(sec) {
+        if (isNaN(sec)) return "00:00.00";
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        const ms = Math.floor((sec % 1) * 100);
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+    }
+
+    // Audio file picker
+    audioFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            loadedFileName.textContent = file.name;
+            audio.src = URL.createObjectURL(file);
+            audio.load();
+            currentSegmentStartTime = 0.00;
+            updateLiveBox();
+        }
+    });
+
+    // Waveform click to scrub
+    waveform.addEventListener('click', (e) => {
+        if (!audio.duration) return;
+        const rect = waveform.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        audio.currentTime = pos * audio.duration;
+    });
+
+    // Time ticker
+    audio.addEventListener('timeupdate', () => {
+        currentTimeLabel.textContent = formatTimePrecise(audio.currentTime);
+        if (audio.duration) {
+            progressIndicator.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+        }
+    });
+
+    function updateLiveBox() {
+        const startAyah = parseInt(currentStartingAyahInput.value) || 1;
+        liveSegmentAyah.textContent = `Current Segment: Ayah ${startAyah}`;
+        liveSegmentStartTime.textContent = `${currentSegmentStartTime.toFixed(2)}s (${formatTimePrecise(currentSegmentStartTime)})`;
+    }
+
+    currentStartingAyahInput.addEventListener('change', updateLiveBox);
+
+    // Commit segment trigger (+ key)
+    function triggerSegmentCommit() {
+        if (!audio.src) {
+            alert("Please choose an audio file first.");
+            return;
+        }
+        pendingEndTime = Math.max(0, audio.currentTime);
+        if (pendingEndTime <= currentSegmentStartTime) {
+            alert("Current time must be ahead of segment start time.");
+            return;
+        }
+
+        const startAyah = parseInt(currentStartingAyahInput.value) || 1;
+        modalStartAyah.textContent = `Ayah ${startAyah}`;
+        modalEndAyahInput.value = startAyah; // default to single verse
+        endAyahModal.classList.add('active');
+        modalEndAyahInput.focus();
+        modalEndAyahInput.select();
+    }
+
+    function confirmSegmentSave() {
+        const startAyah = parseInt(currentStartingAyahInput.value) || 1;
+        const endAyah = parseInt(modalEndAyahInput.value) || startAyah;
+
+        if (endAyah < startAyah) {
+            alert("Ending Ayah cannot be less than starting Ayah.");
+            return;
+        }
+
+        const duration = (pendingEndTime - currentSegmentStartTime).toFixed(2);
+
+        segments.push({
+            surah_id: parseInt(surahIdInput.value) || 1,
+            verse_start: startAyah,
+            verse_end: endAyah,
+            start_time: parseFloat(currentSegmentStartTime.toFixed(2)),
+            end_time: parseFloat(pendingEndTime.toFixed(2)),
+            duration: parseFloat(duration)
+        });
+
+        // Set next start time to this segment's end time
+        currentSegmentStartTime = pendingEndTime;
+        currentStartingAyahInput.value = endAyah + 1;
+
+        endAyahModal.classList.remove('active');
+        updateLiveBox();
+        renderTable();
+    }
+
+    modalConfirmBtn.addEventListener('click', confirmSegmentSave);
+    modalCancelBtn.addEventListener('click', () => {
+        endAyahModal.classList.remove('active');
+    });
+
+    btnManualCommit.addEventListener('click', triggerSegmentCommit);
+
+    // Table rendering
+    function renderTable() {
+        segmentCount.textContent = segments.length;
+        if (!segments.length) {
+            segmentsTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px 0;">No segments marked yet. Start audio and press "+" to slice.</td></tr>`;
+            return;
+        }
+
+        segmentsTable.innerHTML = segments.map((seg, idx) => `
+            <tr>
+                <td>${idx + 1}</td>
+                <td><strong style="color:var(--primary);">${seg.verse_start === seg.verse_end ? `Ayah ${seg.verse_start}` : `Ayahs ${seg.verse_start}–${seg.verse_end}`}</strong></td>
+                <td>${seg.start_time}s</td>
+                <td>${seg.end_time}s</td>
+                <td>${seg.duration}s</td>
+                <td style="text-align: center;">
+                    <button class="btn-tiny-del" onclick="deleteSegment(${idx})" title="Delete Segment">✕</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    window.deleteSegment = (idx) => {
+        segments.splice(idx, 1);
+        renderTable();
+    };
+
+    // Keyboard Shortcuts: Space, Left, Right, +
+    window.addEventListener('keydown', (e) => {
+        // Handle modal Enter / Escape
+        if (endAyahModal.classList.contains('active')) {
+            if (e.code === 'Enter') {
+                e.preventDefault();
+                confirmSegmentSave();
+            } else if (e.code === 'Escape') {
+                endAyahModal.classList.remove('active');
+            }
+            return;
+        }
+
+        // Spacebar: Play/Pause
+        if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            if (audio.paused) audio.play();
+            else audio.pause();
+        }
+
+        // Left Arrow: -5 sec
+        if (e.code === 'ArrowLeft' && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            audio.currentTime = Math.max(0, audio.currentTime - 5);
+        }
+
+        // Right Arrow: +5 sec
+        if (e.code === 'ArrowRight' && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 5);
+        }
+
+        // + or = key: End of segment
+        if ((e.key === '+' || e.key === '=') && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            triggerSegmentCommit();
+        }
+    });
+
+    // Export to JSON
+    btnExportJSON.addEventListener('click', () => {
+        if (!segments.length) return alert("No segments to export!");
+        const surah = surahIdInput.value || 1;
+        const payload = {
+            surah_id: parseInt(surah),
+            audio_file: loadedFileName.textContent,
+            segments: segments
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `surah_${String(surah).padStart(3, '0')}_segments.json`;
+        a.click();
+    });
+
+    // Export to CSV
+    btnExportCSV.addEventListener('click', () => {
+        if (!segments.length) return alert("No segments to export!");
+        const surah = surahIdInput.value || 1;
+        let csvContent = "surah_id,verse_start,verse_end,start_time,end_time,duration\n";
+        segments.forEach(s => {
+            csvContent += `${s.surah_id},${s.verse_start},${s.verse_end},${s.start_time},${s.end_time},${s.duration}\n`;
+        });
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `surah_${String(surah).padStart(3, '0')}_segments.csv`;
+        a.click();
+    });
+</script>
+
+</body>
+</html>
