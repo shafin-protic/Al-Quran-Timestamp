@@ -73,7 +73,7 @@
         .row {
             display: flex;
             gap: 14px;
-            align-items: center;
+            align-items: flex-end;
             flex-wrap: wrap;
             margin-bottom: 14px;
         }
@@ -183,10 +183,12 @@
             align-items: center;
             justify-content: space-between;
             margin: 12px 0;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
         .live-tag {
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             font-weight: 700;
             color: var(--primary);
         }
@@ -238,6 +240,25 @@
             background: var(--surface-elevated);
         }
 
+        .btn-tiny-edit {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--primary);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .btn-tiny-edit:hover {
+            background: var(--primary);
+            color: #000;
+        }
+
         .btn-tiny-del {
             background: rgba(239, 68, 68, 0.12);
             border: 1px solid rgba(239, 68, 68, 0.3);
@@ -250,13 +271,14 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            font-size: 0.85rem;
         }
         .btn-tiny-del:hover {
             background: var(--danger);
             color: #fff;
         }
 
-        /* Modal Popup for Multi-verse End */
+        /* Modals */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -272,7 +294,8 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 20px;
-            width: 340px;
+            width: 360px;
+            max-width: 95vw;
         }
     </style>
 </head>
@@ -297,9 +320,16 @@
                 <label>Starting Ayah</label>
                 <input type="number" id="currentStartingAyah" value="1" min="1" style="width: 85px;">
             </div>
-            <div style="flex:1;">
+            <div>
+                <label>Initial Start Point (s)</label>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <input type="number" id="initialStartTimeInput" value="0.00" step="0.01" min="0" style="width: 90px;" title="Set initial start point for 1st ayah to omit Bismillah">
+                    <button type="button" class="btn" id="btnSetInitialCurrent" title="Set initial start point to current playback position" style="padding: 8px 10px; font-size: 0.76rem;">📍 Current</button>
+                </div>
+            </div>
+            <div style="flex:1; min-width: 180px;">
                 <label>Loaded Audio</label>
-                <div id="loadedFileName" style="font-size: 0.84rem; color: var(--text-muted); padding: 7px 0;">No file chosen</div>
+                <div id="loadedFileName" style="font-size: 0.84rem; color: var(--text-muted); padding: 7px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No file chosen</div>
             </div>
         </div>
 
@@ -310,22 +340,28 @@
 
         <div class="time-display" id="currentTimeLabel">00:00.00</div>
 
-        <!-- Current Working Segment Banner -->
+        <!-- Current Live Segment Dock -->
         <div class="live-status-box">
-            <div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
                 <div class="live-tag" id="liveSegmentAyah">Current Segment: Ayah 1</div>
-                <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px;">
-                    Started at: <span id="liveSegmentStartTime" style="color:var(--accent-gold); font-weight:700;">0.00s</span>
+                <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span>Start:</span>
+                    <input type="number" id="liveSegmentStartInput" step="0.01" min="0" value="0.00" style="width: 85px; padding: 4px 8px; font-size: 0.84rem;" title="Start time of current segment">
+                    <span id="liveSegmentStartTimeFormatted" style="color:var(--accent-gold); font-weight:700;">(00:00.00)</span>
+                    <button type="button" class="btn" id="btnSetLiveStartCurrent" title="Set start time to current audio position (Shortcut: S)" style="padding: 4px 10px; font-size: 0.74rem;">📍 Set to Current (S)</button>
                 </div>
             </div>
-            <button class="btn btn-gold" id="btnManualCommit" title="Shortcut: +">+ Mark End of Segment</button>
+            <button class="btn btn-gold" id="btnManualCommit" title="Shortcut: + or Numpad +">+ Mark End of Segment</button>
         </div>
 
         <!-- Workflow Keyboard Map -->
         <div class="shortcuts-banner">
             <div><kbd>Space</kbd> Play / Pause</div>
-            <div><kbd>←</kbd> -5 sec</div>
-            <div><kbd>→</kbd> +5 sec</div>
+            <div><kbd>←</kbd> -5s</div>
+            <div><kbd>→</kbd> +5s</div>
+            <div><kbd>↓</kbd> -0.3s</div>
+            <div><kbd>↑</kbd> +0.3s</div>
+            <div><kbd>S</kbd> Set Start</div>
             <div><kbd>+</kbd> Mark Segment End</div>
         </div>
     </div>
@@ -348,7 +384,7 @@
                     <th>Start</th>
                     <th>End</th>
                     <th>Duration</th>
-                    <th style="width: 80px; text-align: center;">Action</th>
+                    <th style="width: 95px; text-align: center;">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -374,8 +410,60 @@
             <input type="number" id="modalEndAyahInput" value="1" min="1" style="width:100%;">
         </div>
         <div style="display:flex; justify-content:flex-end; gap:8px;">
-            <button class="btn" id="modalCancelBtn">Cancel</button>
+            <button class="btn" id="modalCancelBtn">Cancel (Esc)</button>
             <button class="btn btn-primary" id="modalConfirmBtn">Save (Enter)</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dialog for Editing an Existing Segment -->
+<div class="modal-overlay" id="editSegmentModal">
+    <div class="modal-card" style="width: 380px;">
+        <h3 style="font-size:1.05rem; margin-bottom:12px; color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
+            <span>✏️ Edit Segment <span id="editSegmentIndexLabel">#1</span></span>
+        </h3>
+        
+        <div style="display:flex; gap:10px; margin-bottom:12px;">
+            <div style="flex:1;">
+                <label>Verse Start</label>
+                <input type="number" id="editVerseStartInput" min="1" style="width:100%;">
+            </div>
+            <div style="flex:1;">
+                <label>Verse End</label>
+                <input type="number" id="editVerseEndInput" min="1" style="width:100%;">
+            </div>
+        </div>
+
+        <div style="margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="margin-bottom:0;">Start Time (seconds)</label>
+                <span id="editStartTimeFormatted" style="font-size:0.75rem; color:var(--accent-gold); font-weight:700;">00:00.00</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <input type="number" id="editStartTimeInput" step="0.01" min="0" style="flex:1;">
+                <button type="button" class="btn" id="btnEditSetStartCurrent" title="Set to current audio playback position" style="padding:6px 10px; font-size:0.75rem;">📍 Current</button>
+            </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="margin-bottom:0;">End Time (seconds)</label>
+                <span id="editEndTimeFormatted" style="font-size:0.75rem; color:var(--accent-gold); font-weight:700;">00:00.00</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <input type="number" id="editEndTimeInput" step="0.01" min="0" style="flex:1;">
+                <button type="button" class="btn" id="btnEditSetEndCurrent" title="Set to current audio playback position" style="padding:6px 10px; font-size:0.75rem;">📍 Current</button>
+            </div>
+        </div>
+
+        <div style="background:var(--surface-elevated); border:1px solid var(--border); border-radius:6px; padding:8px 12px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.78rem; color:var(--text-muted);">Duration: <strong id="editDurationLabel" style="color:var(--text-main);">0.00s</strong></span>
+            <button type="button" class="btn" id="btnPreviewEditSegment" style="padding:4px 8px; font-size:0.75rem;">▶ Play Segment</button>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn" id="editModalCancelBtn">Cancel (Esc)</button>
+            <button class="btn btn-primary" id="editModalSaveBtn">Save Changes (Enter)</button>
         </div>
     </div>
 </div>
@@ -386,13 +474,17 @@
     const loadedFileName = document.getElementById('loadedFileName');
     const surahIdInput = document.getElementById('surahId');
     const currentStartingAyahInput = document.getElementById('currentStartingAyah');
+    const initialStartTimeInput = document.getElementById('initialStartTimeInput');
+    const btnSetInitialCurrent = document.getElementById('btnSetInitialCurrent');
 
     const currentTimeLabel = document.getElementById('currentTimeLabel');
     const waveform = document.getElementById('waveform');
     const progressIndicator = document.getElementById('progressIndicator');
 
     const liveSegmentAyah = document.getElementById('liveSegmentAyah');
-    const liveSegmentStartTime = document.getElementById('liveSegmentStartTime');
+    const liveSegmentStartInput = document.getElementById('liveSegmentStartInput');
+    const liveSegmentStartTimeFormatted = document.getElementById('liveSegmentStartTimeFormatted');
+    const btnSetLiveStartCurrent = document.getElementById('btnSetLiveStartCurrent');
     const btnManualCommit = document.getElementById('btnManualCommit');
 
     const segmentsTable = document.querySelector('#segmentsTable tbody');
@@ -400,19 +492,37 @@
     const btnExportJSON = document.getElementById('btnExportJSON');
     const btnExportCSV = document.getElementById('btnExportCSV');
 
-    // Modal elements
+    // Confirm Modal elements
     const endAyahModal = document.getElementById('endAyahModal');
     const modalStartAyah = document.getElementById('modalStartAyah');
     const modalEndAyahInput = document.getElementById('modalEndAyahInput');
     const modalConfirmBtn = document.getElementById('modalConfirmBtn');
     const modalCancelBtn = document.getElementById('modalCancelBtn');
 
+    // Edit Modal elements
+    const editSegmentModal = document.getElementById('editSegmentModal');
+    const editSegmentIndexLabel = document.getElementById('editSegmentIndexLabel');
+    const editVerseStartInput = document.getElementById('editVerseStartInput');
+    const editVerseEndInput = document.getElementById('editVerseEndInput');
+    const editStartTimeInput = document.getElementById('editStartTimeInput');
+    const editEndTimeInput = document.getElementById('editEndTimeInput');
+    const editStartTimeFormatted = document.getElementById('editStartTimeFormatted');
+    const editEndTimeFormatted = document.getElementById('editEndTimeFormatted');
+    const editDurationLabel = document.getElementById('editDurationLabel');
+    const btnEditSetStartCurrent = document.getElementById('btnEditSetStartCurrent');
+    const btnEditSetEndCurrent = document.getElementById('btnEditSetEndCurrent');
+    const btnPreviewEditSegment = document.getElementById('btnPreviewEditSegment');
+    const editModalSaveBtn = document.getElementById('editModalSaveBtn');
+    const editModalCancelBtn = document.getElementById('editModalCancelBtn');
+
     let segments = [];
     let currentSegmentStartTime = 0.00;
     let pendingEndTime = 0.00;
+    let editingSegmentIndex = null;
+    let previewInterval = null;
 
     function formatTimePrecise(sec) {
-        if (isNaN(sec)) return "00:00.00";
+        if (isNaN(sec) || sec < 0) return "00:00.00";
         const m = Math.floor(sec / 60);
         const s = Math.floor(sec % 60);
         const ms = Math.floor((sec % 1) * 100);
@@ -426,7 +536,7 @@
             loadedFileName.textContent = file.name;
             audio.src = URL.createObjectURL(file);
             audio.load();
-            currentSegmentStartTime = 0.00;
+            currentSegmentStartTime = parseFloat(initialStartTimeInput.value) || 0.00;
             updateLiveBox();
         }
     });
@@ -450,8 +560,46 @@
     function updateLiveBox() {
         const startAyah = parseInt(currentStartingAyahInput.value) || 1;
         liveSegmentAyah.textContent = `Current Segment: Ayah ${startAyah}`;
-        liveSegmentStartTime.textContent = `${currentSegmentStartTime.toFixed(2)}s (${formatTimePrecise(currentSegmentStartTime)})`;
+        liveSegmentStartInput.value = currentSegmentStartTime.toFixed(2);
+        liveSegmentStartTimeFormatted.textContent = `(${formatTimePrecise(currentSegmentStartTime)})`;
+        if (segments.length === 0) {
+            initialStartTimeInput.value = currentSegmentStartTime.toFixed(2);
+        }
     }
+
+    // Setting Start Point logic
+    function setStartToCurrentAudioTime() {
+        const t = parseFloat((audio.currentTime || 0).toFixed(2));
+        currentSegmentStartTime = t;
+        liveSegmentStartInput.value = t.toFixed(2);
+        liveSegmentStartTimeFormatted.textContent = `(${formatTimePrecise(t)})`;
+        if (segments.length === 0) {
+            initialStartTimeInput.value = t.toFixed(2);
+        }
+    }
+
+    btnSetInitialCurrent.addEventListener('click', setStartToCurrentAudioTime);
+    btnSetLiveStartCurrent.addEventListener('click', setStartToCurrentAudioTime);
+
+    initialStartTimeInput.addEventListener('input', () => {
+        if (segments.length === 0) {
+            const val = parseFloat(initialStartTimeInput.value);
+            currentSegmentStartTime = isNaN(val) ? 0.00 : Math.max(0, val);
+            liveSegmentStartInput.value = currentSegmentStartTime.toFixed(2);
+            liveSegmentStartTimeFormatted.textContent = `(${formatTimePrecise(currentSegmentStartTime)})`;
+        }
+    });
+
+    liveSegmentStartInput.addEventListener('input', () => {
+        const val = parseFloat(liveSegmentStartInput.value);
+        if (!isNaN(val)) {
+            currentSegmentStartTime = Math.max(0, val);
+            liveSegmentStartTimeFormatted.textContent = `(${formatTimePrecise(currentSegmentStartTime)})`;
+            if (segments.length === 0) {
+                initialStartTimeInput.value = currentSegmentStartTime.toFixed(2);
+            }
+        }
+    });
 
     currentStartingAyahInput.addEventListener('change', updateLiveBox);
 
@@ -523,58 +671,279 @@
             <tr>
                 <td>${idx + 1}</td>
                 <td><strong style="color:var(--primary);">${seg.verse_start === seg.verse_end ? `Ayah ${seg.verse_start}` : `Ayahs ${seg.verse_start}–${seg.verse_end}`}</strong></td>
-                <td>${seg.start_time}s</td>
-                <td>${seg.end_time}s</td>
-                <td>${seg.duration}s</td>
-                <td style="text-align: center;">
-                    <button class="btn-tiny-del" onclick="deleteSegment(${idx})" title="Delete Segment">✕</button>
+                <td>${seg.start_time.toFixed(2)}s</td>
+                <td>${seg.end_time.toFixed(2)}s</td>
+                <td>${seg.duration.toFixed(2)}s</td>
+                <td style="text-align: center; white-space: nowrap;">
+                    <div style="display: inline-flex; gap: 6px; justify-content: center; align-items: center;">
+                        <button class="btn-tiny-edit" onclick="editSegment(${idx})" title="Edit Segment">✎</button>
+                        <button class="btn-tiny-del" onclick="deleteSegment(${idx})" title="Delete Segment">✕</button>
+                    </div>
                 </td>
             </tr>
         `).join('');
     }
 
     window.deleteSegment = (idx) => {
+        if (!confirm(`Are you sure you want to delete segment ${idx + 1}?`)) return;
         segments.splice(idx, 1);
+        if (segments.length > 0) {
+            const last = segments[segments.length - 1];
+            currentSegmentStartTime = last.end_time;
+            currentStartingAyahInput.value = last.verse_end + 1;
+        } else {
+            currentSegmentStartTime = parseFloat(initialStartTimeInput.value) || 0.00;
+            currentStartingAyahInput.value = 1;
+        }
+        updateLiveBox();
         renderTable();
     };
 
-    // Keyboard Shortcuts: Space, Left, Right, +
+    // Edit Segment Logic
+    window.editSegment = (idx) => {
+        editingSegmentIndex = idx;
+        const seg = segments[idx];
+        if (!seg) return;
+
+        editSegmentIndexLabel.textContent = `#${idx + 1}`;
+        editVerseStartInput.value = seg.verse_start;
+        editVerseEndInput.value = seg.verse_end;
+        editStartTimeInput.value = seg.start_time.toFixed(2);
+        editEndTimeInput.value = seg.end_time.toFixed(2);
+        updateEditModalCalculations();
+
+        editSegmentModal.classList.add('active');
+        editVerseEndInput.focus();
+        editVerseEndInput.select();
+    };
+
+    function updateEditModalCalculations() {
+        const s = parseFloat(editStartTimeInput.value);
+        const e = parseFloat(editEndTimeInput.value);
+        if (!isNaN(s) && s >= 0) {
+            editStartTimeFormatted.textContent = formatTimePrecise(s);
+        } else {
+            editStartTimeFormatted.textContent = "--:--.--";
+        }
+        if (!isNaN(e) && e >= 0) {
+            editEndTimeFormatted.textContent = formatTimePrecise(e);
+        } else {
+            editEndTimeFormatted.textContent = "--:--.--";
+        }
+        if (!isNaN(s) && !isNaN(e) && e > s) {
+            editDurationLabel.textContent = `${(e - s).toFixed(2)}s`;
+        } else {
+            editDurationLabel.textContent = "--";
+        }
+    }
+
+    editStartTimeInput.addEventListener('input', updateEditModalCalculations);
+    editEndTimeInput.addEventListener('input', updateEditModalCalculations);
+
+    btnEditSetStartCurrent.addEventListener('click', () => {
+        editStartTimeInput.value = (audio.currentTime || 0).toFixed(2);
+        updateEditModalCalculations();
+    });
+
+    btnEditSetEndCurrent.addEventListener('click', () => {
+        editEndTimeInput.value = (audio.currentTime || 0).toFixed(2);
+        updateEditModalCalculations();
+    });
+
+    btnPreviewEditSegment.addEventListener('click', () => {
+        const start = parseFloat(editStartTimeInput.value);
+        const end = parseFloat(editEndTimeInput.value);
+        if (isNaN(start) || isNaN(end) || end <= start) {
+            alert("End time must be greater than start time.");
+            return;
+        }
+        if (!audio.src) {
+            alert("No audio loaded.");
+            return;
+        }
+
+        if (previewInterval) clearInterval(previewInterval);
+        audio.currentTime = Math.max(0, start);
+        audio.play();
+
+        previewInterval = setInterval(() => {
+            if (audio.currentTime >= end || audio.paused) {
+                audio.pause();
+                clearInterval(previewInterval);
+                previewInterval = null;
+            }
+        }, 30);
+    });
+
+    function closeEditModal() {
+        if (previewInterval) {
+            clearInterval(previewInterval);
+            previewInterval = null;
+        }
+        editSegmentModal.classList.remove('active');
+        editingSegmentIndex = null;
+    }
+
+    function saveSegmentEdit() {
+        if (editingSegmentIndex === null || editingSegmentIndex < 0 || editingSegmentIndex >= segments.length) return;
+
+        const startAyah = parseInt(editVerseStartInput.value);
+        const endAyah = parseInt(editVerseEndInput.value);
+        if (isNaN(startAyah) || startAyah < 1) {
+            alert("Please enter a valid starting Ayah.");
+            editVerseStartInput.focus();
+            return;
+        }
+        if (isNaN(endAyah) || endAyah < startAyah) {
+            alert("Ending Ayah cannot be less than starting Ayah.");
+            editVerseEndInput.focus();
+            return;
+        }
+
+        const startT = parseFloat(editStartTimeInput.value);
+        const endT = parseFloat(editEndTimeInput.value);
+        if (isNaN(startT) || startT < 0) {
+            alert("Please enter a valid start time.");
+            editStartTimeInput.focus();
+            return;
+        }
+        if (isNaN(endT) || endT <= startT) {
+            alert("End time must be greater than start time.");
+            editEndTimeInput.focus();
+            return;
+        }
+
+        const duration = parseFloat((endT - startT).toFixed(2));
+
+        segments[editingSegmentIndex].verse_start = startAyah;
+        segments[editingSegmentIndex].verse_end = endAyah;
+        segments[editingSegmentIndex].start_time = parseFloat(startT.toFixed(2));
+        segments[editingSegmentIndex].end_time = parseFloat(endT.toFixed(2));
+        segments[editingSegmentIndex].duration = duration;
+
+        // If editing the latest segment, update next segment start time and starting ayah
+        if (editingSegmentIndex === segments.length - 1) {
+            currentSegmentStartTime = parseFloat(endT.toFixed(2));
+            currentStartingAyahInput.value = endAyah + 1;
+            updateLiveBox();
+        }
+
+        closeEditModal();
+        renderTable();
+    }
+
+    editModalSaveBtn.addEventListener('click', saveSegmentEdit);
+    editModalCancelBtn.addEventListener('click', closeEditModal);
+
+    // Keyboard Shortcuts & Enter key support (regular + numpad)
     window.addEventListener('keydown', (e) => {
-        // Handle modal Enter / Escape
+        const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
+        const isEscape = e.key === 'Escape' || e.code === 'Escape';
+
+        // Edit Modal Shortcuts
+        if (editSegmentModal.classList.contains('active')) {
+            if (isEnter) {
+                e.preventDefault();
+                saveSegmentEdit();
+            } else if (isEscape) {
+                e.preventDefault();
+                closeEditModal();
+            }
+            return;
+        }
+
+        // Confirm Modal Shortcuts
         if (endAyahModal.classList.contains('active')) {
-            if (e.code === 'Enter') {
+            if (isEnter) {
                 e.preventDefault();
                 confirmSegmentSave();
-            } else if (e.code === 'Escape') {
+            } else if (isEscape) {
+                e.preventDefault();
                 endAyahModal.classList.remove('active');
             }
             return;
         }
 
+        // Ignore single-key shortcuts while typing in input fields
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        // Up Arrow (or Page Up): forward 0.3 sec
+        if (e.code === 'ArrowUp' || e.key === 'ArrowUp' || e.code === 'PageUp' || e.key === 'PageUp') {
+            e.preventDefault();
+            audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 0.3);
+            currentTimeLabel.textContent = formatTimePrecise(audio.currentTime);
+            if (audio.duration) {
+                progressIndicator.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+            }
+            return;
+        }
+
+        // Down Arrow (or Page Down): backward 0.3 sec
+        if (e.code === 'ArrowDown' || e.key === 'ArrowDown' || e.code === 'PageDown' || e.key === 'PageDown') {
+            e.preventDefault();
+            audio.currentTime = Math.max(0, audio.currentTime - 0.3);
+            currentTimeLabel.textContent = formatTimePrecise(audio.currentTime);
+            if (audio.duration) {
+                progressIndicator.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+            }
+            return;
+        }
+
         // Spacebar: Play/Pause
-        if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+        if (e.code === 'Space') {
             e.preventDefault();
             if (audio.paused) audio.play();
             else audio.pause();
+            return;
         }
 
         // Left Arrow: -5 sec
-        if (e.code === 'ArrowLeft' && e.target.tagName !== 'INPUT') {
+        if (e.code === 'ArrowLeft') {
             e.preventDefault();
             audio.currentTime = Math.max(0, audio.currentTime - 5);
+            return;
         }
 
         // Right Arrow: +5 sec
-        if (e.code === 'ArrowRight' && e.target.tagName !== 'INPUT') {
+        if (e.code === 'ArrowRight') {
             e.preventDefault();
             audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 5);
+            return;
         }
 
-        // + or = key: End of segment
-        if ((e.key === '+' || e.key === '=') && e.target.tagName !== 'INPUT') {
+        // 'S' key or '[' key: Set start time to current playback position
+        if (e.key === 's' || e.key === 'S' || e.key === '[') {
+            e.preventDefault();
+            setStartToCurrentAudioTime();
+            return;
+        }
+
+        // + or = or NumpadAdd key: End of segment
+        if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
             e.preventDefault();
             triggerSegmentCommit();
+            return;
         }
+    });
+
+    // Enter & Escape key handling inside modal input fields
+    modalEndAyahInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter') {
+            e.preventDefault();
+            confirmSegmentSave();
+        }
+    });
+
+    [editVerseStartInput, editVerseEndInput, editStartTimeInput, editEndTimeInput].forEach(inp => {
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter') {
+                e.preventDefault();
+                saveSegmentEdit();
+            } else if (e.key === 'Escape' || e.code === 'Escape') {
+                e.preventDefault();
+                closeEditModal();
+            }
+        });
     });
 
     // Export to JSON
@@ -611,3 +980,4 @@
 
 </body>
 </html>
+ 
