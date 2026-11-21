@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quran Audio Fast Segmenter</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2310161d'/%3E%3Cpath d='M16 16c0-2.2 1.8-4 4-4h24c2.2 0 4 1.8 4 4v32c0 2.2-1.8 4-4 4H20c-2.2 0-4-1.8-4-4V16z' fill='%2310b981'/%3E%3Cpath d='M22 14v34c4-2 10-2 14 0V14c-4-2-10-2-14 0z' fill='%23059669' opacity='0.5'/%3E%3Cpath d='M30 12v18l3.5-3 3.5 3V12z' fill='%23f59e0b'/%3E%3Ccircle cx='46' cy='46' r='10' fill='%2316202a' stroke='%23f59e0b' stroke-width='2.5'/%3E%3Cpath d='M46 41v5l3.5 2' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -40,7 +41,7 @@
 
         .container {
             width: 100%;
-            max-width: 900px;
+            max-width: 920px;
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -60,6 +61,8 @@
             border-bottom: 1px solid var(--border);
             padding-bottom: 12px;
             margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .header h1 {
@@ -118,6 +121,7 @@
             align-items: center;
             gap: 6px;
             transition: all 0.2s;
+            user-select: none;
         }
 
         .btn:hover {
@@ -282,20 +286,22 @@
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, 0.78);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 100;
+            padding: 16px;
         }
         .modal-overlay.active { display: flex; }
         .modal-card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 20px;
-            width: 360px;
+            padding: 22px;
+            width: 380px;
             max-width: 95vw;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
     </style>
 </head>
@@ -305,8 +311,9 @@
     <div class="card">
         <div class="header">
             <h1>⏱️ Fast Quran Audio Segmenter</h1>
-            <div>
-                <label for="audioFileInput" class="btn btn-primary">📁 Choose Surah Audio</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="btn" id="btnAbout" title="About & Credits" style="padding: 8px 12px;">ℹ️ About</button>
+                <label for="audioFileInput" class="btn btn-primary" style="cursor: pointer;">📁 Choose Surah Audio</label>
                 <input type="file" id="audioFileInput" accept="audio/*">
             </div>
         </div>
@@ -323,8 +330,11 @@
             <div>
                 <label>Initial Start Point (s)</label>
                 <div style="display: flex; gap: 6px; align-items: center;">
-                    <input type="number" id="initialStartTimeInput" value="0.00" step="0.01" min="0" style="width: 90px;" title="Set initial start point for 1st ayah to omit Bismillah">
-                    <button type="button" class="btn" id="btnSetInitialCurrent" title="Set initial start point to current playback position" style="padding: 8px 10px; font-size: 0.76rem;">📍 Current</button>
+                    <input type="number" id="initialStartTimeInput" value="0.00" step="0.01" min="0" style="width: 80px;" title="Set initial start point for 1st ayah to omit Bismillah">
+                    <button type="button" class="btn" id="btnSetInitialCurrent" title="Set initial start point to current playback position" style="padding: 8px 9px; font-size: 0.76rem;">📍 Current</button>
+                    <button type="button" class="btn" id="btnPresetStart" title="Click to apply preset. Double-click or right-click to change custom preset." style="padding: 8px 9px; font-size: 0.76rem; border-color: var(--accent-gold); color: var(--accent-gold);">
+                        ⏱️ <span id="presetValueLabel">6.15s</span>
+                    </button>
                 </div>
             </div>
             <div>
@@ -358,6 +368,7 @@
                     <input type="number" id="liveSegmentStartInput" step="0.01" min="0" value="0.00" style="width: 85px; padding: 4px 8px; font-size: 0.84rem;" title="Start time of current segment">
                     <span id="liveSegmentStartTimeFormatted" style="color:var(--accent-gold); font-weight:700;">(00:00.00)</span>
                     <button type="button" class="btn" id="btnSetLiveStartCurrent" title="Set start time to current audio position (Shortcut: S)" style="padding: 4px 10px; font-size: 0.74rem;">📍 Set to Current (S)</button>
+                    <button type="button" class="btn" id="btnGoToLastEnd" title="Jump audio playback to end of last completed segment" style="padding: 4px 10px; font-size: 0.74rem;">⏭️ Jump to Last End</button>
                 </div>
             </div>
             <button class="btn btn-gold" id="btnManualCommit" title="Shortcut: + or Numpad +">+ Mark End of Segment</button>
@@ -378,11 +389,15 @@
 
     <!-- Mapped Segments List -->
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <h2>Segments (<span id="segmentCount">0</span>)</h2>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn btn-gold" id="btnExportJSON">⬇ Export JSON</button>
-                <button class="btn btn-primary" id="btnExportCSV">⬇ Export CSV</button>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                <label for="csvFileInput" class="btn" style="cursor: pointer; padding: 8px 12px;" title="Import unfinished CSV segments to resume work">📂 Import CSV</label>
+                <input type="file" id="csvFileInput" accept=".csv,text/csv">
+                <button class="btn" id="btnCopyCSV" title="Copy CSV data directly to clipboard" style="padding: 8px 12px;">📋 Copy CSV</button>
+                <button class="btn btn-gold" id="btnExportJSON" style="padding: 8px 12px;">⬇ JSON</button>
+                <button class="btn btn-primary" id="btnExportCSV" style="padding: 8px 12px;">⬇ CSV</button>
+                <button class="btn" id="btnClearSegments" title="Clear all segments" style="padding: 8px 10px; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">🗑️</button>
             </div>
         </div>
 
@@ -404,6 +419,12 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Footer Credit -->
+    <footer style="text-align: center; margin-top: 10px; font-size: 0.76rem; color: var(--text-muted);">
+        &lt;/&gt; Credit: <strong style="color: var(--accent-gold);">Shafin Al Asad Protic</strong> &bull; 
+        <a href="https://www.facebook.com/shafin.protic" target="_blank" rel="noopener noreferrer" style="color: var(--primary); text-decoration: none;">www.facebook.com/shafin.protic</a>
+    </footer>
 </div>
 
 <audio id="audio"></audio>
@@ -478,6 +499,53 @@
     </div>
 </div>
 
+<!-- Modal: Audio Loaded - Confirm Surah -->
+<div class="modal-overlay" id="audioSurahModal">
+    <div class="modal-card" style="width: 380px;">
+        <h3 style="font-size:1.05rem; margin-bottom:8px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+            <span>📖 Set Surah Number</span>
+        </h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px; word-break:break-all;">
+            Audio File: <strong id="modalAudioFileName" style="color:var(--text-main);"></strong>
+        </p>
+
+        <div style="margin-bottom:14px;">
+            <label>Surah Number (1 – 114)</label>
+            <input type="number" id="modalSurahInput" min="1" max="114" value="1" style="width:100%; font-size:1.05rem; padding:10px;">
+        </div>
+
+        <div id="modalSurahNotice" style="font-size:0.76rem; color:var(--accent-gold); background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.25); border-radius:6px; padding:8px 10px; margin-bottom:14px; display:none; line-height: 1.4;">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn" id="modalSurahCancelBtn">Cancel (Esc)</button>
+            <button class="btn btn-primary" id="modalSurahConfirmBtn">Confirm & Continue (Enter)</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: About & Credits -->
+<div class="modal-overlay" id="aboutModal">
+    <div class="modal-card" style="width: 380px; text-align: center;">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">⏱️ 📖</div>
+        <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 6px;">Fast Quran Audio Segmenter</h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">
+            High-efficiency audio segmenting & timestamp generator for the Holy Quran.
+        </p>
+
+        <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+            <div style="font-size: 0.88rem; font-weight: 700; color: var(--accent-gold); letter-spacing: 0.03em; margin-bottom: 8px;">
+                &lt;/&gt; Credit: Shafin Al Asad Protic &lt;/&gt;
+            </div>
+            <a href="https://www.facebook.com/shafin.protic" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-size: 0.84rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); transition: all 0.2s;">
+                🌐 www.facebook.com/shafin.protic
+            </a>
+        </div>
+
+        <button class="btn btn-primary" id="btnAboutClose" style="width: 100%; justify-content: center;">Close (Enter / Esc)</button>
+    </div>
+</div>
+
 <script>
     const audio = document.getElementById('audio');
     const audioFileInput = document.getElementById('audioFileInput');
@@ -486,6 +554,9 @@
     const currentStartingAyahInput = document.getElementById('currentStartingAyah');
     const initialStartTimeInput = document.getElementById('initialStartTimeInput');
     const btnSetInitialCurrent = document.getElementById('btnSetInitialCurrent');
+    const btnPresetStart = document.getElementById('btnPresetStart');
+    const presetValueLabel = document.getElementById('presetValueLabel');
+
     const playbackSpeedInput = document.getElementById('playbackSpeedInput');
     const btnSpeedDown = document.getElementById('btnSpeedDown');
     const btnSpeedUp = document.getElementById('btnSpeedUp');
@@ -499,12 +570,16 @@
     const liveSegmentStartInput = document.getElementById('liveSegmentStartInput');
     const liveSegmentStartTimeFormatted = document.getElementById('liveSegmentStartTimeFormatted');
     const btnSetLiveStartCurrent = document.getElementById('btnSetLiveStartCurrent');
+    const btnGoToLastEnd = document.getElementById('btnGoToLastEnd');
     const btnManualCommit = document.getElementById('btnManualCommit');
 
     const segmentsTable = document.querySelector('#segmentsTable tbody');
     const segmentCount = document.getElementById('segmentCount');
+    const csvFileInput = document.getElementById('csvFileInput');
+    const btnCopyCSV = document.getElementById('btnCopyCSV');
     const btnExportJSON = document.getElementById('btnExportJSON');
     const btnExportCSV = document.getElementById('btnExportCSV');
+    const btnClearSegments = document.getElementById('btnClearSegments');
 
     // Confirm Modal elements
     const endAyahModal = document.getElementById('endAyahModal');
@@ -529,13 +604,40 @@
     const editModalSaveBtn = document.getElementById('editModalSaveBtn');
     const editModalCancelBtn = document.getElementById('editModalCancelBtn');
 
+    // Audio Surah Modal elements
+    const audioSurahModal = document.getElementById('audioSurahModal');
+    const modalAudioFileName = document.getElementById('modalAudioFileName');
+    const modalSurahInput = document.getElementById('modalSurahInput');
+    const modalSurahNotice = document.getElementById('modalSurahNotice');
+    const modalSurahConfirmBtn = document.getElementById('modalSurahConfirmBtn');
+    const modalSurahCancelBtn = document.getElementById('modalSurahCancelBtn');
+
+    // About Modal elements
+    const btnAbout = document.getElementById('btnAbout');
+    const aboutModal = document.getElementById('aboutModal');
+    const btnAboutClose = document.getElementById('btnAboutClose');
+
     let segments = [];
     let currentSegmentStartTime = 0.00;
     let pendingEndTime = 0.00;
     let editingSegmentIndex = null;
     let previewInterval = null;
     let currentPlaybackRate = 1.00;
+    let pendingAudioFile = null;
 
+    // Load custom start preset from localStorage or default to 6.15s
+    let customStartPreset = localStorage.getItem('quran_start_preset') || '6.15';
+    presetValueLabel.textContent = `${customStartPreset}s`;
+
+    function formatTimePrecise(sec) {
+        if (isNaN(sec) || sec < 0) return "00:00.00";
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        const ms = Math.floor((sec % 1) * 100);
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+    }
+
+    // Playback Speed with Linked Pitch (preservesPitch = false)
     function applyPlaybackSpeed(rate) {
         currentPlaybackRate = Math.max(0.25, Math.min(3.0, parseFloat(rate) || 1.0));
         currentPlaybackRate = parseFloat(currentPlaybackRate.toFixed(2));
@@ -565,7 +667,6 @@
         applyPlaybackSpeed(1.0);
     });
 
-    // Keep pitch linked on play & metadata events
     audio.addEventListener('play', () => {
         audio.preservesPitch = false;
         audio.mozPreservesPitch = false;
@@ -580,24 +681,71 @@
         audio.playbackRate = currentPlaybackRate;
     });
 
-    function formatTimePrecise(sec) {
-        if (isNaN(sec) || sec < 0) return "00:00.00";
-        const m = Math.floor(sec / 60);
-        const s = Math.floor(sec % 60);
-        const ms = Math.floor((sec % 1) * 100);
-        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
-    }
-
-    // Audio file picker
+    // Audio file picker & Surah Prompt Modal
     audioFileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) {
-            loadedFileName.textContent = file.name;
-            audio.src = URL.createObjectURL(file);
-            audio.load();
-            applyPlaybackSpeed(currentPlaybackRate);
-            currentSegmentStartTime = parseFloat(initialStartTimeInput.value) || 0.00;
-            updateLiveBox();
+        if (!file) return;
+
+        pendingAudioFile = file;
+        loadedFileName.textContent = file.name;
+        modalAudioFileName.textContent = file.name;
+
+        // Try to auto-detect surah number from filename (e.g. "002.mp3", "surah_114")
+        let detectedSurah = null;
+        const match = file.name.match(/(?:surah|s)?0*([1-9]\d{0,2})/i);
+        if (match) {
+            const num = parseInt(match[1]);
+            if (num >= 1 && num <= 114) {
+                detectedSurah = num;
+            }
+        }
+
+        const currentSurah = parseInt(surahIdInput.value) || 1;
+        const suggestedSurah = detectedSurah || (segments.length > 0 ? (currentSurah + 1 <= 114 ? currentSurah + 1 : currentSurah) : currentSurah);
+        modalSurahInput.value = suggestedSurah;
+
+        if (segments.length > 0) {
+            modalSurahNotice.style.display = 'block';
+            modalSurahNotice.innerHTML = `ℹ️ You have <strong>${segments.length}</strong> existing segment(s) in memory. This audio will be <strong>appended</strong> to your work, starting from <strong>Ayah 1</strong>.`;
+        } else {
+            modalSurahNotice.style.display = 'none';
+        }
+
+        audioSurahModal.classList.add('active');
+        modalSurahInput.focus();
+        modalSurahInput.select();
+    });
+
+    function confirmAudioSurah() {
+        if (!pendingAudioFile) {
+            audioSurahModal.classList.remove('active');
+            return;
+        }
+
+        const newSurah = parseInt(modalSurahInput.value) || 1;
+        surahIdInput.value = newSurah;
+
+        audio.src = URL.createObjectURL(pendingAudioFile);
+        audio.load();
+        applyPlaybackSpeed(currentPlaybackRate);
+
+        // Reset to ayah 1 for the new audio file and set start point
+        currentStartingAyahInput.value = 1;
+        currentSegmentStartTime = parseFloat(initialStartTimeInput.value) || 0.00;
+        audio.currentTime = currentSegmentStartTime;
+
+        audioSurahModal.classList.remove('active');
+        pendingAudioFile = null;
+        updateLiveBox();
+    }
+
+    modalSurahConfirmBtn.addEventListener('click', confirmAudioSurah);
+    modalSurahCancelBtn.addEventListener('click', () => {
+        audioSurahModal.classList.remove('active');
+        pendingAudioFile = null;
+        audioFileInput.value = '';
+        if (!audio.src) {
+            loadedFileName.textContent = "No file chosen";
         }
     });
 
@@ -640,6 +788,68 @@
 
     btnSetInitialCurrent.addEventListener('click', setStartToCurrentAudioTime);
     btnSetLiveStartCurrent.addEventListener('click', setStartToCurrentAudioTime);
+
+    // Preset Start Point Button (6.15s or custom preset)
+    function applyStartPreset(preset) {
+        const val = parseFloat(preset);
+        if (isNaN(val) || val < 0) return;
+        initialStartTimeInput.value = val.toFixed(2);
+        if (segments.length === 0) {
+            currentSegmentStartTime = val;
+            liveSegmentStartInput.value = val.toFixed(2);
+            liveSegmentStartTimeFormatted.textContent = `(${formatTimePrecise(val)})`;
+        }
+        if (audio.src) {
+            audio.currentTime = val;
+            currentTimeLabel.textContent = formatTimePrecise(val);
+            if (audio.duration) {
+                progressIndicator.style.width = `${(val / audio.duration) * 100}%`;
+            }
+        }
+    }
+
+    btnPresetStart.addEventListener('click', () => {
+        applyStartPreset(customStartPreset);
+    });
+
+    function promptChangePreset() {
+        const input = prompt("Set custom starting preset for 1st Ayah (seconds):", customStartPreset);
+        if (input !== null) {
+            const val = parseFloat(input);
+            if (!isNaN(val) && val >= 0) {
+                customStartPreset = val.toFixed(2);
+                localStorage.setItem('quran_start_preset', customStartPreset);
+                presetValueLabel.textContent = `${customStartPreset}s`;
+                applyStartPreset(customStartPreset);
+            } else {
+                alert("Please enter a valid positive number.");
+            }
+        }
+    }
+
+    btnPresetStart.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        promptChangePreset();
+    });
+
+    btnPresetStart.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        promptChangePreset();
+    });
+
+    // Jump to ending position of last segmented ayah
+    btnGoToLastEnd.addEventListener('click', () => {
+        if (!segments.length) {
+            alert("No segments marked yet.");
+            return;
+        }
+        const lastSeg = segments[segments.length - 1];
+        audio.currentTime = lastSeg.end_time;
+        currentTimeLabel.textContent = formatTimePrecise(audio.currentTime);
+        if (audio.duration) {
+            progressIndicator.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+        }
+    });
 
     initialStartTimeInput.addEventListener('input', () => {
         if (segments.length === 0) {
@@ -730,7 +940,7 @@
         segmentsTable.innerHTML = segments.map((seg, idx) => `
             <tr>
                 <td>${idx + 1}</td>
-                <td><strong style="color:var(--primary);">${seg.verse_start === seg.verse_end ? `Ayah ${seg.verse_start}` : `Ayahs ${seg.verse_start}–${seg.verse_end}`}</strong></td>
+                <td><strong style="color:var(--primary);">${seg.verse_start === seg.verse_end ? `Ayah ${seg.verse_start}` : `Ayahs ${seg.verse_start}–${seg.verse_end}`}</strong> <span style="font-size:0.7rem; color:var(--text-muted);">(Surah ${seg.surah_id})</span></td>
                 <td>${seg.start_time.toFixed(2)}s</td>
                 <td>${seg.end_time.toFixed(2)}s</td>
                 <td>${seg.duration.toFixed(2)}s</td>
@@ -751,6 +961,7 @@
             const last = segments[segments.length - 1];
             currentSegmentStartTime = last.end_time;
             currentStartingAyahInput.value = last.verse_end + 1;
+            surahIdInput.value = last.surah_id;
         } else {
             currentSegmentStartTime = parseFloat(initialStartTimeInput.value) || 0.00;
             currentStartingAyahInput.value = 1;
@@ -759,17 +970,29 @@
         renderTable();
     };
 
+    btnClearSegments.addEventListener('click', () => {
+        if (!segments.length) return;
+        if (confirm("Are you sure you want to clear all marked segments?")) {
+            segments = [];
+            currentSegmentStartTime = parseFloat(initialStartTimeInput.value) || 0.00;
+            currentStartingAyahInput.value = 1;
+            updateLiveBox();
+            renderTable();
+        }
+    });
+
     // Edit Segment Logic
     window.editSegment = (idx) => {
         editingSegmentIndex = idx;
         const seg = segments[idx];
         if (!seg) return;
 
-        editSegmentIndexLabel.textContent = `#${idx + 1}`;
+        editSegmentIndexLabel.textContent = `#${idx + 1} (Surah ${seg.surah_id})`;
         editVerseStartInput.value = seg.verse_start;
         editVerseEndInput.value = seg.verse_end;
         editStartTimeInput.value = seg.start_time.toFixed(2);
         editEndTimeInput.value = seg.end_time.toFixed(2);
+        btnPreviewEditSegment.textContent = "▶ Play Segment";
         updateEditModalCalculations();
 
         editSegmentModal.classList.add('active');
@@ -810,6 +1033,21 @@
         updateEditModalCalculations();
     });
 
+    // In Edit Segment window: "Play Segment" plays once and parks audio playback position exactly at end
+    function stopPreviewAtEnd(end) {
+        if (previewInterval) {
+            clearInterval(previewInterval);
+            previewInterval = null;
+        }
+        audio.pause();
+        audio.currentTime = end;
+        currentTimeLabel.textContent = formatTimePrecise(end);
+        if (audio.duration) {
+            progressIndicator.style.width = `${(end / audio.duration) * 100}%`;
+        }
+        btnPreviewEditSegment.textContent = "▶ Play Segment";
+    }
+
     btnPreviewEditSegment.addEventListener('click', () => {
         const start = parseFloat(editStartTimeInput.value);
         const end = parseFloat(editEndTimeInput.value);
@@ -822,23 +1060,28 @@
             return;
         }
 
-        if (previewInterval) clearInterval(previewInterval);
+        // If currently playing preview, stop and park at end
+        if (previewInterval) {
+            stopPreviewAtEnd(end);
+            return;
+        }
+
         audio.currentTime = Math.max(0, start);
         audio.play();
+        btnPreviewEditSegment.textContent = "⏹ Stop (Set to End)";
 
         previewInterval = setInterval(() => {
             if (audio.currentTime >= end || audio.paused) {
-                audio.pause();
-                clearInterval(previewInterval);
-                previewInterval = null;
+                stopPreviewAtEnd(end);
             }
-        }, 30);
+        }, 25);
     });
 
     function closeEditModal() {
         if (previewInterval) {
             clearInterval(previewInterval);
             previewInterval = null;
+            btnPreviewEditSegment.textContent = "▶ Play Segment";
         }
         editSegmentModal.classList.remove('active');
         editingSegmentIndex = null;
@@ -895,10 +1138,39 @@
     editModalSaveBtn.addEventListener('click', saveSegmentEdit);
     editModalCancelBtn.addEventListener('click', closeEditModal);
 
+    // About Modal triggers
+    btnAbout.addEventListener('click', () => {
+        aboutModal.classList.add('active');
+    });
+    btnAboutClose.addEventListener('click', () => {
+        aboutModal.classList.remove('active');
+    });
+
     // Keyboard Shortcuts & Enter key support (regular + numpad)
     window.addEventListener('keydown', (e) => {
         const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
         const isEscape = e.key === 'Escape' || e.code === 'Escape';
+
+        // About Modal
+        if (aboutModal.classList.contains('active')) {
+            if (isEnter || isEscape) {
+                e.preventDefault();
+                aboutModal.classList.remove('active');
+            }
+            return;
+        }
+
+        // Audio Surah Modal
+        if (audioSurahModal.classList.contains('active')) {
+            if (isEnter) {
+                e.preventDefault();
+                confirmAudioSurah();
+            } else if (isEscape) {
+                e.preventDefault();
+                modalSurahCancelBtn.click();
+            }
+            return;
+        }
 
         // Edit Modal Shortcuts
         if (editSegmentModal.classList.contains('active')) {
@@ -924,7 +1196,7 @@
             return;
         }
 
-        // Ignore single-key shortcuts while typing in input fields
+        // Ignore single-key playback shortcuts while typing in input fields
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
         // Up Arrow (or Page Up): forward 0.3 sec
@@ -1020,6 +1292,134 @@
         });
     });
 
+    modalSurahInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter') {
+            e.preventDefault();
+            confirmAudioSurah();
+        }
+    });
+
+    // Generate CSV string
+    function generateCSVString() {
+        if (!segments.length) return "";
+        let csvContent = "surah_id,verse_start,verse_end,start_time,end_time,duration\n";
+        segments.forEach(s => {
+            csvContent += `${s.surah_id},${s.verse_start},${s.verse_end},${s.start_time.toFixed(2)},${s.end_time.toFixed(2)},${s.duration.toFixed(2)}\n`;
+        });
+        return csvContent;
+    }
+
+    // 1. Copy CSV to Clipboard
+    btnCopyCSV.addEventListener('click', async () => {
+        if (!segments.length) {
+            alert("No segments to copy!");
+            return;
+        }
+        const csvData = generateCSVString();
+        try {
+            await navigator.clipboard.writeText(csvData);
+            const originalHTML = btnCopyCSV.innerHTML;
+            btnCopyCSV.innerHTML = "✓ Copied!";
+            btnCopyCSV.style.borderColor = "var(--primary)";
+            btnCopyCSV.style.color = "var(--primary)";
+            setTimeout(() => {
+                btnCopyCSV.innerHTML = originalHTML;
+                btnCopyCSV.style.borderColor = "";
+                btnCopyCSV.style.color = "";
+            }, 1500);
+        } catch (err) {
+            const textarea = document.createElement("textarea");
+            textarea.value = csvData;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+            alert("CSV copied to clipboard!");
+        }
+    });
+
+    // 2. Import CSV (Unfinished Work)
+    csvFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const text = evt.target.result;
+            parseAndLoadCSV(text);
+            csvFileInput.value = '';
+        };
+        reader.readAsText(file);
+    });
+
+    function parseAndLoadCSV(text) {
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+        if (!lines.length) {
+            alert("The selected CSV file is empty.");
+            return;
+        }
+
+        const imported = [];
+        let startLineIdx = 0;
+        const firstCols = lines[0].split(',').map(c => c.trim().toLowerCase());
+        if (firstCols.includes('surah_id') || isNaN(parseFloat(firstCols[0]))) {
+            startLineIdx = 1;
+        }
+
+        for (let i = startLineIdx; i < lines.length; i++) {
+            const cols = lines[i].split(',').map(c => c.trim());
+            if (cols.length < 5) continue;
+            const surah = parseInt(cols[0]);
+            const vStart = parseInt(cols[1]);
+            const vEnd = parseInt(cols[2]);
+            const sTime = parseFloat(cols[3]);
+            const eTime = parseFloat(cols[4]);
+            const dur = cols[5] ? parseFloat(cols[5]) : parseFloat((eTime - sTime).toFixed(2));
+
+            if (!isNaN(surah) && !isNaN(vStart) && !isNaN(vEnd) && !isNaN(sTime) && !isNaN(eTime)) {
+                imported.push({
+                    surah_id: surah,
+                    verse_start: vStart,
+                    verse_end: vEnd,
+                    start_time: parseFloat(sTime.toFixed(2)),
+                    end_time: parseFloat(eTime.toFixed(2)),
+                    duration: parseFloat(dur.toFixed(2))
+                });
+            }
+        }
+
+        if (!imported.length) {
+            alert("No valid segment rows could be parsed from the CSV file.");
+            return;
+        }
+
+        if (segments.length > 0) {
+            const choice = confirm(`You currently have ${segments.length} segment(s).\n\nClick OK to APPEND the ${imported.length} imported segment(s).\nClick CANCEL to REPLACE them.`);
+            if (choice) {
+                segments = segments.concat(imported);
+            } else {
+                segments = imported;
+            }
+        } else {
+            segments = imported;
+        }
+
+        const lastSeg = segments[segments.length - 1];
+        surahIdInput.value = lastSeg.surah_id;
+        currentStartingAyahInput.value = lastSeg.verse_end + 1;
+        currentSegmentStartTime = lastSeg.end_time;
+        if (audio.src) {
+            audio.currentTime = lastSeg.end_time;
+            currentTimeLabel.textContent = formatTimePrecise(lastSeg.end_time);
+            if (audio.duration) {
+                progressIndicator.style.width = `${(lastSeg.end_time / audio.duration) * 100}%`;
+            }
+        }
+        updateLiveBox();
+        renderTable();
+        alert(`Successfully imported ${imported.length} segment(s)! Ready to continue Surah ${lastSeg.surah_id} from Ayah ${lastSeg.verse_end + 1} at ${lastSeg.end_time.toFixed(2)}s.`);
+    }
+
     // Export to JSON
     btnExportJSON.addEventListener('click', () => {
         if (!segments.length) return alert("No segments to export!");
@@ -1040,10 +1440,7 @@
     btnExportCSV.addEventListener('click', () => {
         if (!segments.length) return alert("No segments to export!");
         const surah = surahIdInput.value || 1;
-        let csvContent = "surah_id,verse_start,verse_end,start_time,end_time,duration\n";
-        segments.forEach(s => {
-            csvContent += `${s.surah_id},${s.verse_start},${s.verse_end},${s.start_time},${s.end_time},${s.duration}\n`;
-        });
+        const csvContent = generateCSVString();
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
