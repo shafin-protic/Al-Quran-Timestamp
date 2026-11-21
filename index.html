@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2310161d'/%3E%3Cpath d='M16 16c0-2.2 1.8-4 4-4h24c2.2 0 4 1.8 4 4v32c0 2.2-1.8 4-4 4H20c-2.2 0-4-1.8-4-4V16z' fill='%2310b981'/%3E%3Cpath d='M22 14v34c4-2 10-2 14 0V14c-4-2-10-2-14 0z' fill='%23059669' opacity='0.5'/%3E%3Cpath d='M30 12v18l3.5-3 3.5 3V12z' fill='%23f59e0b'/%3E%3Ccircle cx='46' cy='46' r='10' fill='%2316202a' stroke='%23f59e0b' stroke-width='2.5'/%3E%3Cpath d='M46 41v5l3.5 2' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #090d11;
@@ -157,7 +157,7 @@
 
         .waveform-mock {
             width: 100%;
-            height: 48px;
+            height: 50px;
             background: var(--surface-elevated);
             border: 1px solid var(--border);
             border-radius: var(--radius);
@@ -167,14 +167,136 @@
             margin-bottom: 8px;
         }
 
+        /* Segment Highlights in Waveform (Orange) */
+        .segment-highlights-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .segment-highlight-block {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: rgba(245, 158, 11, 0.42);
+            border-left: 1.5px solid #f59e0b;
+            border-right: 1.5px solid #f59e0b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            color: #ffffff;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+            box-shadow: inset 0 0 6px rgba(245, 158, 11, 0.25);
+            transition: background 0.2s;
+            user-select: none;
+        }
+
         .progress-indicator {
             position: absolute;
             top: 0;
             left: 0;
             bottom: 0;
             width: 0%;
-            background: rgba(16, 185, 129, 0.28);
+            background: rgba(16, 185, 129, 0.18);
             border-right: 2px solid var(--primary);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Eye-catchy Active Ayah Block */
+        .active-ayah-banner {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(245, 158, 11, 0.14) 100%);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.08);
+            border-radius: var(--radius);
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 10px 0;
+        }
+
+        .ayah-hero-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .ayah-hero-badge-tag {
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .ayah-hero-main {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .ayah-hero-prefix {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .ayah-hero-num {
+            font-size: 2.3rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .ayah-hero-sub {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .ayah-hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-step {
+            padding: 8px 12px;
+            font-size: 0.86rem;
+            font-weight: 700;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-step:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .ayah-hero-input {
+            width: 75px;
+            text-align: center;
+            font-size: 1.15rem;
+            font-weight: 800;
+            padding: 6px 8px;
+            color: var(--primary);
+            background: var(--surface);
+            border: 1px solid var(--border);
         }
 
         /* Current Live Segment Dock */
@@ -186,7 +308,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin: 12px 0;
+            margin: 10px 0;
             gap: 12px;
             flex-wrap: wrap;
         }
@@ -324,10 +446,6 @@
                 <input type="number" id="surahId" value="1" min="1" max="114" style="width: 85px;">
             </div>
             <div>
-                <label>Starting Ayah</label>
-                <input type="number" id="currentStartingAyah" value="1" min="1" style="width: 85px;">
-            </div>
-            <div>
                 <label>Initial Start Point (s)</label>
                 <div style="display: flex; gap: 6px; align-items: center;">
                     <input type="number" id="initialStartTimeInput" value="0.00" step="0.01" min="0" style="width: 80px;" title="Set initial start point for 1st ayah to omit Bismillah">
@@ -352,12 +470,31 @@
             </div>
         </div>
 
-        <!-- Scrubber Bar -->
+        <!-- Scrubber Bar with Highlighted Segments -->
         <div class="waveform-mock" id="waveform">
+            <div id="segmentHighlights" class="segment-highlights-container"></div>
             <div class="progress-indicator" id="progressIndicator"></div>
         </div>
 
         <div class="time-display" id="currentTimeLabel">00:00.00</div>
+
+        <!-- 1. Eye-catchy Separate Block for Current Starting Ayah -->
+        <div class="active-ayah-banner">
+            <div class="ayah-hero-content">
+                <div class="ayah-hero-badge-tag">TARGET / STARTING AYAH</div>
+                <div class="ayah-hero-main">
+                    <span class="ayah-hero-prefix">Ayah</span>
+                    <span class="ayah-hero-num" id="eyecatchyAyahDisplay">1</span>
+                </div>
+                <div class="ayah-hero-sub" id="eyecatchySurahDisplay">Surah 1</div>
+            </div>
+            <div class="ayah-hero-actions">
+                <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Adjust:</span>
+                <button type="button" class="btn-step" id="btnAyahDec" title="Previous Ayah">-1</button>
+                <input type="number" id="currentStartingAyah" value="1" min="1" class="ayah-hero-input" title="Current Starting Ayah Number">
+                <button type="button" class="btn-step" id="btnAyahInc" title="Next Ayah">+1</button>
+            </div>
+        </div>
 
         <!-- Current Live Segment Dock -->
         <div class="live-status-box">
@@ -371,7 +508,13 @@
                     <button type="button" class="btn" id="btnGoToLastEnd" title="Jump audio playback to end of last completed segment" style="padding: 4px 10px; font-size: 0.74rem;">⏭️ Jump to Last End</button>
                 </div>
             </div>
-            <button class="btn btn-gold" id="btnManualCommit" title="Shortcut: + or Numpad +">+ Mark End of Segment</button>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <!-- 2. Button on Control Panel to Edit Last Created Segment -->
+                <button type="button" class="btn" id="btnEditLastSegment" title="Edit the most recently created segment (Shortcut: E)" style="border-color: rgba(16, 185, 129, 0.4); color: var(--primary);">
+                    ✏️ Edit Last Segment (E)
+                </button>
+                <button class="btn btn-gold" id="btnManualCommit" title="Shortcut: + or Numpad +">+ Mark End of Segment</button>
+            </div>
         </div>
 
         <!-- Workflow Keyboard Map -->
@@ -383,6 +526,7 @@
             <div><kbd>↑</kbd> +0.3s</div>
             <div><kbd>[</kbd> / <kbd>]</kbd> Speed -/+</div>
             <div><kbd>S</kbd> Set Start</div>
+            <div><kbd>E</kbd> Edit Last</div>
             <div><kbd>+</kbd> Mark Segment End</div>
         </div>
     </div>
@@ -393,8 +537,9 @@
             <h2>Segments (<span id="segmentCount">0</span>)</h2>
             <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
                 <label for="csvFileInput" class="btn" style="cursor: pointer; padding: 8px 12px;" title="Import unfinished CSV segments to resume work">📂 Import CSV</label>
-                <input type="file" id="csvFileInput" accept=".csv,text/csv">
-                <button class="btn" id="btnCopyCSV" title="Copy CSV data directly to clipboard" style="padding: 8px 12px;">📋 Copy CSV</button>
+                <input type="file" id="csvFileInput" accept=".csv,text/csv,.tsv,text/tab-separated-values">
+                <!-- 3. Button to copy tab-separated CSV data directly -->
+                <button class="btn" id="btnCopyCSV" title="Copy tab-separated data directly to clipboard (ready for Excel / Sheets)" style="padding: 8px 12px;">📋 Copy Data (Tab-Separated)</button>
                 <button class="btn btn-gold" id="btnExportJSON" style="padding: 8px 12px;">⬇ JSON</button>
                 <button class="btn btn-primary" id="btnExportCSV" style="padding: 8px 12px;">⬇ CSV</button>
                 <button class="btn" id="btnClearSegments" title="Clear all segments" style="padding: 8px 10px; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">🗑️</button>
@@ -552,6 +697,11 @@
     const loadedFileName = document.getElementById('loadedFileName');
     const surahIdInput = document.getElementById('surahId');
     const currentStartingAyahInput = document.getElementById('currentStartingAyah');
+    const eyecatchyAyahDisplay = document.getElementById('eyecatchyAyahDisplay');
+    const eyecatchySurahDisplay = document.getElementById('eyecatchySurahDisplay');
+    const btnAyahDec = document.getElementById('btnAyahDec');
+    const btnAyahInc = document.getElementById('btnAyahInc');
+
     const initialStartTimeInput = document.getElementById('initialStartTimeInput');
     const btnSetInitialCurrent = document.getElementById('btnSetInitialCurrent');
     const btnPresetStart = document.getElementById('btnPresetStart');
@@ -564,6 +714,7 @@
 
     const currentTimeLabel = document.getElementById('currentTimeLabel');
     const waveform = document.getElementById('waveform');
+    const segmentHighlights = document.getElementById('segmentHighlights');
     const progressIndicator = document.getElementById('progressIndicator');
 
     const liveSegmentAyah = document.getElementById('liveSegmentAyah');
@@ -571,6 +722,7 @@
     const liveSegmentStartTimeFormatted = document.getElementById('liveSegmentStartTimeFormatted');
     const btnSetLiveStartCurrent = document.getElementById('btnSetLiveStartCurrent');
     const btnGoToLastEnd = document.getElementById('btnGoToLastEnd');
+    const btnEditLastSegment = document.getElementById('btnEditLastSegment');
     const btnManualCommit = document.getElementById('btnManualCommit');
 
     const segmentsTable = document.querySelector('#segmentsTable tbody');
@@ -642,7 +794,6 @@
         currentPlaybackRate = Math.max(0.25, Math.min(3.0, parseFloat(rate) || 1.0));
         currentPlaybackRate = parseFloat(currentPlaybackRate.toFixed(2));
 
-        // Disable pitch preservation: pitch automatically shifts with speed in identical ratio (varispeed)
         audio.preservesPitch = false;
         audio.mozPreservesPitch = false;
         audio.webkitPreservesPitch = false;
@@ -679,7 +830,43 @@
         audio.mozPreservesPitch = false;
         audio.webkitPreservesPitch = false;
         audio.playbackRate = currentPlaybackRate;
+        renderSegmentHighlights();
     });
+
+    audio.addEventListener('durationchange', () => {
+        renderSegmentHighlights();
+    });
+
+    // 4. Highlight already segmented portions on progress bar in Orange
+    function renderSegmentHighlights() {
+        if (!segmentHighlights) return;
+
+        const duration = audio.duration;
+        if (!duration || isNaN(duration) || duration <= 0 || !segments.length) {
+            segmentHighlights.innerHTML = '';
+            return;
+        }
+
+        const currentSurah = parseInt(surahIdInput.value) || 1;
+        // Include segments for current surah or active set
+        const relevant = segments.filter(s => s.surah_id === currentSurah || segments.every(x => x.surah_id === segments[0].surah_id));
+
+        segmentHighlights.innerHTML = relevant.map((seg) => {
+            const leftPct = Math.max(0, Math.min(100, (seg.start_time / duration) * 100));
+            const rightPct = Math.max(0, Math.min(100, (seg.end_time / duration) * 100));
+            const widthPct = Math.max(0.15, rightPct - leftPct);
+            const label = seg.verse_start === seg.verse_end ? `A${seg.verse_start}` : `A${seg.verse_start}-${seg.verse_end}`;
+            const showLabel = widthPct >= 3.0;
+
+            return `
+                <div class="segment-highlight-block" 
+                     style="left: ${leftPct.toFixed(2)}%; width: ${widthPct.toFixed(2)}%;"
+                     title="Ayah ${seg.verse_start}${seg.verse_start !== seg.verse_end ? '–' + seg.verse_end : ''}: ${seg.start_time.toFixed(2)}s – ${seg.end_time.toFixed(2)}s (${seg.duration.toFixed(2)}s)">
+                    ${showLabel ? `<span>${label}</span>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
 
     // Audio file picker & Surah Prompt Modal
     audioFileInput.addEventListener('change', (e) => {
@@ -690,7 +877,7 @@
         loadedFileName.textContent = file.name;
         modalAudioFileName.textContent = file.name;
 
-        // Try to auto-detect surah number from filename (e.g. "002.mp3", "surah_114")
+        // Try to auto-detect surah number from filename
         let detectedSurah = null;
         const match = file.name.match(/(?:surah|s)?0*([1-9]\d{0,2})/i);
         if (match) {
@@ -737,6 +924,7 @@
         audioSurahModal.classList.remove('active');
         pendingAudioFile = null;
         updateLiveBox();
+        renderSegmentHighlights();
     }
 
     modalSurahConfirmBtn.addEventListener('click', confirmAudioSurah);
@@ -767,13 +955,37 @@
 
     function updateLiveBox() {
         const startAyah = parseInt(currentStartingAyahInput.value) || 1;
+        const surah = parseInt(surahIdInput.value) || 1;
+
+        // 1. Update Eye-catchy Starting Ayah Block
+        eyecatchyAyahDisplay.textContent = startAyah;
+        eyecatchySurahDisplay.textContent = `Surah ${surah}`;
+        currentStartingAyahInput.value = startAyah;
+
         liveSegmentAyah.textContent = `Current Segment: Ayah ${startAyah}`;
         liveSegmentStartInput.value = currentSegmentStartTime.toFixed(2);
         liveSegmentStartTimeFormatted.textContent = `(${formatTimePrecise(currentSegmentStartTime)})`;
         if (segments.length === 0) {
             initialStartTimeInput.value = currentSegmentStartTime.toFixed(2);
         }
+        renderSegmentHighlights();
     }
+
+    // Step Ayah Buttons (-1 and +1)
+    btnAyahInc.addEventListener('click', () => {
+        const curr = parseInt(currentStartingAyahInput.value) || 1;
+        currentStartingAyahInput.value = curr + 1;
+        updateLiveBox();
+    });
+
+    btnAyahDec.addEventListener('click', () => {
+        const curr = parseInt(currentStartingAyahInput.value) || 1;
+        currentStartingAyahInput.value = Math.max(1, curr - 1);
+        updateLiveBox();
+    });
+
+    currentStartingAyahInput.addEventListener('input', updateLiveBox);
+    surahIdInput.addEventListener('input', updateLiveBox);
 
     // Setting Start Point logic
     function setStartToCurrentAudioTime() {
@@ -851,6 +1063,16 @@
         }
     });
 
+    // 2. Button on Control Panel to Edit Last Created Segment
+    function editLastSegment() {
+        if (!segments.length) {
+            alert("No segments created yet to edit.");
+            return;
+        }
+        editSegment(segments.length - 1);
+    }
+    btnEditLastSegment.addEventListener('click', editLastSegment);
+
     initialStartTimeInput.addEventListener('input', () => {
         if (segments.length === 0) {
             const val = parseFloat(initialStartTimeInput.value);
@@ -870,8 +1092,6 @@
             }
         }
     });
-
-    currentStartingAyahInput.addEventListener('change', updateLiveBox);
 
     // Commit segment trigger (+ key)
     function triggerSegmentCommit() {
@@ -934,6 +1154,7 @@
         segmentCount.textContent = segments.length;
         if (!segments.length) {
             segmentsTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px 0;">No segments marked yet. Start audio and press "+" to slice.</td></tr>`;
+            renderSegmentHighlights();
             return;
         }
 
@@ -952,6 +1173,8 @@
                 </td>
             </tr>
         `).join('');
+
+        renderSegmentHighlights();
     }
 
     window.deleteSegment = (idx) => {
@@ -1264,6 +1487,13 @@
             return;
         }
 
+        // 'E' key: Edit last created segment
+        if (e.key === 'e' || e.key === 'E') {
+            e.preventDefault();
+            editLastSegment();
+            return;
+        }
+
         // + or = or NumpadAdd key: End of segment
         if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') {
             e.preventDefault();
@@ -1299,7 +1529,7 @@
         }
     });
 
-    // Generate CSV string
+    // Generate CSV string (Comma-separated for files)
     function generateCSVString() {
         if (!segments.length) return "";
         let csvContent = "surah_id,verse_start,verse_end,start_time,end_time,duration\n";
@@ -1309,17 +1539,27 @@
         return csvContent;
     }
 
-    // 1. Copy CSV to Clipboard
+    // 3. Generate Tab-Separated string for copying to clipboard (seamless paste into Excel / Google Sheets)
+    function generateTSVString() {
+        if (!segments.length) return "";
+        let tsvContent = "surah_id\tverse_start\tverse_end\tstart_time\tend_time\tduration\n";
+        segments.forEach(s => {
+            tsvContent += `${s.surah_id}\t${s.verse_start}\t${s.verse_end}\t${s.start_time.toFixed(2)}\t${s.end_time.toFixed(2)}\t${s.duration.toFixed(2)}\n`;
+        });
+        return tsvContent;
+    }
+
+    // 3. Copy Tab-Separated CSV Data to Clipboard
     btnCopyCSV.addEventListener('click', async () => {
         if (!segments.length) {
             alert("No segments to copy!");
             return;
         }
-        const csvData = generateCSVString();
+        const tsvData = generateTSVString();
         try {
-            await navigator.clipboard.writeText(csvData);
+            await navigator.clipboard.writeText(tsvData);
             const originalHTML = btnCopyCSV.innerHTML;
-            btnCopyCSV.innerHTML = "✓ Copied!";
+            btnCopyCSV.innerHTML = "✓ Copied (Tab-Separated)!";
             btnCopyCSV.style.borderColor = "var(--primary)";
             btnCopyCSV.style.color = "var(--primary)";
             setTimeout(() => {
@@ -1329,16 +1569,16 @@
             }, 1500);
         } catch (err) {
             const textarea = document.createElement("textarea");
-            textarea.value = csvData;
+            textarea.value = tsvData;
             document.body.appendChild(textarea);
             textarea.select();
             document.execCommand("copy");
             document.body.removeChild(textarea);
-            alert("CSV copied to clipboard!");
+            alert("Tab-separated data copied to clipboard! (Ready to paste directly into Excel / Sheets)");
         }
     });
 
-    // 2. Import CSV (Unfinished Work)
+    // Import CSV (supports both comma and tab separated files)
     csvFileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -1361,13 +1601,20 @@
 
         const imported = [];
         let startLineIdx = 0;
-        const firstCols = lines[0].split(',').map(c => c.trim().toLowerCase());
+        
+        // Detect delimiter: tab or comma
+        const firstLine = lines[0];
+        const isTab = firstLine.includes('\t');
+        const delimiter = isTab ? '\t' : ',';
+
+        const firstCols = firstLine.split(delimiter).map(c => c.trim().toLowerCase());
         if (firstCols.includes('surah_id') || isNaN(parseFloat(firstCols[0]))) {
             startLineIdx = 1;
         }
 
         for (let i = startLineIdx; i < lines.length; i++) {
-            const cols = lines[i].split(',').map(c => c.trim());
+            const lineDelimiter = lines[i].includes('\t') ? '\t' : ',';
+            const cols = lines[i].split(lineDelimiter).map(c => c.trim());
             if (cols.length < 5) continue;
             const surah = parseInt(cols[0]);
             const vStart = parseInt(cols[1]);
